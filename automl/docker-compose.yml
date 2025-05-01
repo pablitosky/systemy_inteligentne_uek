@@ -1,0 +1,74 @@
+version: "3.7"
+
+  # AUTOML
+services:
+  h2o:
+    image: h2oai/h2o-open-source-k8s:3.46.0.7
+    restart: unless-stopped
+    ports:
+      - 54321:54321
+
+  # MLFLOW
+  minio:
+    image: minio/minio
+    command: server --address ":8000" --console-address ":8001" /data
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: eHkHt1w5JgbzTfOyMSv3qhqM3NKanKGGENDiIx29
+      MINIO_ACCESS_KEY: cXP6S51XS9xwDbw1ins
+      MINIO_SECRET_KEY: yqpHn3lYRKWTWUeYINZ
+    volumes: 
+      - minio_data1:/data
+
+  postgres:
+    image: postgres:15.3
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mlflow
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: gwYcDbNOCatziTnhyOKqVuRfOgrhZdq4GswadKJk
+    volumes: 
+      - postgres_data1:/var/lib/postgresql/data
+
+  mlflow:
+    image: prometheus-mlflow  
+    restart: unless-stopped
+    ports:
+    - 5000:5000
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:8000
+      DEFAULT_ARTIFACT_ROOT: s3://mlflow/
+      AWS_ACCESS_KEY_ID: cXP6S51XS9xwDbw1ins
+      AWS_SECRET_ACCESS_KEY: yqpHn3lYRKWTWUeYINZ
+      AWS_DEFAULT_REGION: us-east-2
+      MLFLOW_S3_IGNORE_TLS: "TRUE"
+      BACKEND_STORE_URI: postgresql://mlflow:gwYcDbNOCatziTnhyOKqVuRfOgrhZdq4GswadKJk@postgres:5432/mlflow
+    depends_on:
+      - minio
+      - postgres
+
+  # createbuckets:
+  #   image: minio/mc
+  #   depends_on:
+  #     - minio
+  #   volumes: ["./minio_policy:/data"]
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #     /usr/bin/mc config host add myminio http://minio:8000 minio_admin eHkHt1w5JgbzTfOyMSv3qhqM3NKanKGGENDiIx29;
+  #     /usr/bin/mc admin user add myminio prometheus 12345678;
+  #     /usr/bin/mc admin policy attach myminio diagnostics --user prometheus;
+  #     /usr/bin/mc admin policy attach myminio readwrite --user prometheus;
+  #     /usr/bin/mc mb myminio/data;
+  #     /usr/bin/mc mb myminio/mlflow;
+  #     /usr/bin/mc mb myminio/personal;
+  #     /usr/bin/mc admin user svcacct add --access-key "cXP6S51XS9xwDbw1ins" --secret-key "yqpHn3lYRKWTWUeYINZ"  --policy "/data/policy.json" myminio prometheus;
+  #     exit 0;
+  #     "
+volumes:
+  minio_data1:
+  postgres_data1:
+  redis_data1:
