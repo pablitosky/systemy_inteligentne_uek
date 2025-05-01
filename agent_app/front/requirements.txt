@@ -1,0 +1,9 @@
+streamlit 
+requests
+fastapi
+uvicorn
+langserve
+langchain
+langgraph
+langchain-google-genai
+qdrant-client
