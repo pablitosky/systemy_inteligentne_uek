@@ -50,3 +50,5 @@ def response_stream(text):
     for word in text.split(" "):
         yield word + ' '
         time.sleep(0.1)
+
+        
